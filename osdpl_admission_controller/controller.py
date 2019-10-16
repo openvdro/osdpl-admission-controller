@@ -20,33 +20,38 @@ import jsonschema
 
 class ControllerResource(object):
     def on_post(self, req, resp):
+        resp.content_type = 'application/json'
+        resp_body = {'kind': 'AdmissionReview', 'response': {'allowed': True}}
+
+        body = {}
         try:
             body = json.loads(req.stream.read())
-        except Exception:
-            raise falcon.HTTPBadRequest(
-                'Missing HTTP POST body to validate.')
-        with open(os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                               "schemas.json")) as f:
-            schema_dict = json.load(f)
-        # Validate admission request against schema
-        jsonschema.Draft3Validator(schema_dict).is_valid(body)
+            with open(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                   "schemas.json")) as f:
+                schema_dict = json.load(f)
+            # Validate admission request against schema
+            jsonschema.Draft3Validator(schema_dict).validate(body)
+        except Exception as e:
+            resp_body['response']['allowed'] = False
+            resp_body['response']['status'] = {
+                'code': 400, 'message': (
+                    f'Exception parsing the body of request: {e}.')}
         review_request = body.get('request', {})
-        if not review_request:
-            # Nothing to validate
-            return
-        if review_request.get('kind', {}).get('kind') != 'OpenStackDeployment':
-            # We don't handle any other types of objects
-            return
-
+        resp_body['response']['uid'] = review_request.get('uid')
+        resp_body['apiVersion'] = body.get('apiVersion')
         features = review_request.get('object', {}).get('spec', {}).get(
             'features', {})
         # Validate key manager configuration
-        if 'key-manager' in features.get('services', []):
+        if (review_request.get('kind', {}).get('kind') == 'OpenStackDeployment'
+                and 'key-manager' in features.get('services', [])):
             if 'backend' not in features.get('barbican', {}):
-                raise falcon.HTTPBadRequest(
-                    "Malformed OpenStackDeployment spec",
-                    "If key-manager is enabled, you need to specify the "
-                    "desired backend.")
+                resp_body['response']['allowed'] = False
+                resp_body['response']['status'] = {
+                    'code': 400, 'message': (
+                        "Malformed OpenStackDeployment spec, if key-manager "
+                        "is enabled, you need to specify the desired backend.")
+                }
+        resp.body = json.dumps(resp_body)
 
 
 def create_api():
