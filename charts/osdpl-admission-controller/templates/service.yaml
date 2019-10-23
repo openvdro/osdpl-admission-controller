@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "osdpl-admission-controller.name" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+{{ include "osdpl-admission-controller.labels" . | indent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 443
+      targetPort: https
+      protocol: TCP
+      name: https
+  selector:
+    app.kubernetes.io/name: {{ include "osdpl-admission-controller.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}

@@ -1,0 +1,18 @@
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: {{ include "osdpl-admission-controller.fullname" . }}
+webhooks:
+  - name: {{ include "osdpl-admission-controller.name" . }}.{{ .Values.namespace }}.svc
+    clientConfig:
+      service:
+        name: {{ include "osdpl-admission-controller.name" . }}
+        namespace: {{ .Values.namespace }}
+        path: "/validate"
+      caBundle: {{ .Values.tls.ca | b64enc }}
+    rules:
+      - operations: [ "CREATE" ]
+        apiGroups: ["lcm.mirantis.com"]
+        apiVersions: ["v1alpha1"]
+        resources: ["openstackdeployments"]
+        scope: "Namespaced"

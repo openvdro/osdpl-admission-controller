@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "osdpl-admission-controller.fullname" . }}
+  namespace: {{ .Values.namespace }}
+data:
+  oac.crt: {{ required "TLS certificates required for webhook!" .Values.tls.crt | b64enc }}
+  oac.key: {{ required "TLS certificates required for webhook!" .Values.tls.key | b64enc }}
+type: Opaque
