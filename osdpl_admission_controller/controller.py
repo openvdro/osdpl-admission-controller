@@ -18,7 +18,12 @@ import falcon
 import jsonschema
 
 
-class ControllerResource(object):
+class RootResource(object):
+    def on_get(self, req, resp):
+        pass
+
+
+class ValidationResource(object):
     def on_post(self, req, resp):
         resp.content_type = 'application/json'
         resp_body = {'kind': 'AdmissionReview', 'response': {'allowed': True}}
@@ -56,6 +61,8 @@ class ControllerResource(object):
 
 def create_api():
     app = falcon.API()
-    controller = ControllerResource()
-    app.add_route('/validate', controller)
+    health_checker = RootResource()
+    validator = ValidationResource()
+    app.add_route('/', health_checker)
+    app.add_route('/validate', validator)
     return app
