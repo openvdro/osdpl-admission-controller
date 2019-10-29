@@ -17,46 +17,82 @@ import os
 import falcon
 import jsonschema
 
+from osdpl_admission_controller import validators
+
+
+_VALIDATORS = {}
+for validator in validators.__all__:
+    _VALIDATORS[validator.service] = validator()
+
 
 class RootResource(object):
     def on_get(self, req, resp):
         pass
 
 
+class ReviewResponse(object):
+    def __init__(self):
+        self.api_version = ''
+        self.uid = ''
+        self._allowed = True
+        self._status_code = None
+        self._status_message = None
+
+    def set_error(self, code, message):
+        self._allowed = False
+        self._status_code = code
+        self._status_message = message
+
+    @property
+    def is_allowed(self):
+        return self._allowed
+
+    def to_json(self):
+        ret_json = {
+            'kind': 'AdmissionReview', 'apiVersion': self.api_version,
+            'response': {
+                'allowed': self._allowed, 'uid': self.uid
+            }
+        }
+        if not self._allowed:
+            ret_json['response']['status'] = {
+                'code': self._status_code, 'message': self._status_message}
+        return ret_json
+
+
 class ValidationResource(object):
     def on_post(self, req, resp):
         resp.content_type = 'application/json'
-        resp_body = {'kind': 'AdmissionReview', 'response': {'allowed': True}}
-
-        body = {}
+        response = ReviewResponse()
         try:
             body = json.loads(req.stream.read())
+            # Try to get apiVersion and uid even if request doesn't comply to
+            # schema
+            response.api_version = body.get('apiVersion')
+            review_request = body.get('request', {})
+            response.uid = review_request.get('uid')
             with open(os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                    "schemas.json")) as f:
                 schema_dict = json.load(f)
             # Validate admission request against schema
             jsonschema.Draft3Validator(schema_dict).validate(body)
         except Exception as e:
-            resp_body['response']['allowed'] = False
-            resp_body['response']['status'] = {
-                'code': 400, 'message': (
-                    f'Exception parsing the body of request: {e}.')}
-        review_request = body.get('request', {})
-        resp_body['response']['uid'] = review_request.get('uid')
-        resp_body['apiVersion'] = body.get('apiVersion')
-        features = review_request.get('object', {}).get('spec', {}).get(
-            'features', {})
-        # Validate key manager configuration
-        if (review_request.get('kind', {}).get('kind') == 'OpenStackDeployment'
-                and 'key-manager' in features.get('services', [])):
-            if 'backend' not in features.get('barbican', {}):
-                resp_body['response']['allowed'] = False
-                resp_body['response']['status'] = {
-                    'code': 400, 'message': (
-                        "Malformed OpenStackDeployment spec, if key-manager "
-                        "is enabled, you need to specify the desired backend.")
-                }
-        resp.body = json.dumps(resp_body)
+            response.set_error(
+                400, f'Exception parsing the body of request: {e}.')
+        else:
+            features = review_request.get('object', {}).get('spec', {}).get(
+                'features', {})
+            if review_request.get('kind', {}).get(
+                    'kind') == 'OpenStackDeployment':
+                for service in features.get('services', []):
+                    if service in _VALIDATORS:
+                        # Validate all the enabled services, if there is a
+                        # corresponding validator
+                        _VALIDATORS[service].validate(
+                            review_request, response)
+                        if not response.is_allowed:
+                            break
+        resp.body = json.dumps(response.to_json())
 
 
 def create_api():
