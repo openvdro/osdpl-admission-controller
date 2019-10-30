@@ -16,6 +16,7 @@ from osdpl_admission_controller.validators import base
 
 class BarbicanValidator(base.BaseValidator):
     service = 'key-manager'
+
     def validate(self, review_request, response):
         features = review_request.get('object', {}).get('spec', {}).get(
             'features', {})

@@ -16,6 +16,7 @@ from osdpl_admission_controller.validators import base
 
 class KeystoneValidator(base.BaseValidator):
     service = 'identity'
+
     def validate(self, review_request, response):
         keycloak_section = review_request.get('object', {}).get(
             'spec', {}).get('features', {}).get('keystone', {}).get(
