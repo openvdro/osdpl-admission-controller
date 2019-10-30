@@ -80,10 +80,10 @@ class ValidationResource(object):
             response.set_error(
                 400, f'Exception parsing the body of request: {e}.')
         else:
-            features = review_request.get('object', {}).get('spec', {}).get(
-                'features', {})
             if review_request.get('kind', {}).get(
                     'kind') == 'OpenStackDeployment':
+                features = review_request.get('object', {}).get(
+                    'spec', {}).get('features', {})
                 for service in features.get('services', []):
                     if service in _VALIDATORS:
                         # Validate all the enabled services, if there is a
