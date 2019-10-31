@@ -32,6 +32,18 @@ REQ_BODY_DICT = {
     }
 }
 
+TEST_SCHEMA = {
+    "$schema": "http://json-schema.org/draft-03/schema#",
+    "type": "object",
+    "properties": {
+        "apiVersion": {
+            "type": "string",
+            "required": True
+        }
+    },
+    "additionalProperties": True
+}
+
 
 class OkValidator(base.BaseValidator):
     def validate(self, review_request, response):
@@ -55,6 +67,7 @@ class TestRootController(unittest.TestCase):
         self.controller.on_get(None, None)
 
 
+@mock.patch.object(controller, '_load_schema', TEST_SCHEMA)
 class TestValidationController(unittest.TestCase):
 
     def setUp(self):

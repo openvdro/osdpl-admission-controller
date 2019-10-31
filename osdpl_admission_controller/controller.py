@@ -60,7 +60,16 @@ class ReviewResponse(object):
         return ret_json
 
 
+def _load_schema():
+    with open(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                           "schemas.json")) as f:
+        return json.load(f)
+
+
 class ValidationResource(object):
+    def __init__(self):
+        self.schema_dict = _load_schema()
+
     def on_post(self, req, resp):
         resp.content_type = 'application/json'
         response = ReviewResponse()
@@ -71,11 +80,8 @@ class ValidationResource(object):
             response.api_version = body.get('apiVersion')
             review_request = body.get('request', {})
             response.uid = review_request.get('uid')
-            with open(os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                   "schemas.json")) as f:
-                schema_dict = json.load(f)
             # Validate admission request against schema
-            jsonschema.Draft3Validator(schema_dict).validate(body)
+            jsonschema.Draft3Validator(self.schema_dict).validate(body)
         except Exception as e:
             response.set_error(
                 400, f'Exception parsing the body of request: {e}.')
