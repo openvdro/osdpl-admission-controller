@@ -1,3 +1,6 @@
+# Default directory for SSL certificates
+certs/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
