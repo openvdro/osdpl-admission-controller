@@ -1,6 +1,10 @@
 Admission Controller for Kubernetes OpenStackDeployment
 =======================================================
 
+You can read more about admission controllers [here](https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers).
+To use this particular admission controller, you need to have
+ValidatingAdmissionWebhook admission plugin enabled in Kubernetes API server.
+
 Should be run under uwsgi, for example:
 
 `$ uwsgi uwsgi.ini`
