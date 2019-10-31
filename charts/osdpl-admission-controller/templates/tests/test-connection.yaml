@@ -11,5 +11,5 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args:  ['{{ include "osdpl-admission-controller.fullname" . }}:{{ .Values.service.port }}']
+      args:  ['https://{{ include "osdpl-admission-controller.fullname" . }}.{{ .Values.namespace }}.svc']
   restartPolicy: Never

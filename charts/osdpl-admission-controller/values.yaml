@@ -4,7 +4,7 @@
 
 image:
   repository: quay.io/openvdro/osdpl-admission-controller
-  tag: 0.0.6
+  tag: 0.0.8
   pullPolicy: IfNotPresent
 
 imagePullSecret:
@@ -15,7 +15,6 @@ fullnameOverride: ""
 namespace: osh-system
 
 service:
-  port: 443
   type: ClusterIP
 
 tls:

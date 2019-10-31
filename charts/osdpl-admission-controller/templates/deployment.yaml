@@ -17,8 +17,10 @@ spec:
         app.kubernetes.io/name: {{ include "osdpl-admission-controller.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
+      {{- if .Values.imagePullSecret.name }}
       imagePullSecrets:
         - name: {{ .Values.imagePullSecret.name }}
+      {{- end }}
       serviceAccountName: {{ template "osdpl-admission-controller.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
